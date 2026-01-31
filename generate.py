@@ -10,10 +10,8 @@ from google.oauth2.service_account import Credentials
 
 print("start generate.py")
 
-# ===== Gemini 設定（新SDK）=====
-client = genai.Client(
-    api_key=os.environ["GEMINI_API_KEY"]
-)
+# ===== Gemini 設定（google-genai）=====
+client = genai.Client(api_key=os.environ["GEMINI_API_KEY"])
 
 MODEL_NAME = "gemini-1.5-flash"
 
@@ -82,7 +80,7 @@ def generate_post(agent):
 
     response = client.models.generate_content(
         model=MODEL_NAME,
-        contents=prompt,
+        contents=prompt
     )
 
     return response.text.strip()
@@ -91,7 +89,6 @@ def generate_post(agent):
 def save_post(author, content):
     now = datetime.now().isoformat()
 
-    # SQLite
     cur.execute(
         "INSERT INTO posts (author, content, created_at) VALUES (?, ?, ?)",
         (author, content, now)
@@ -99,10 +96,7 @@ def save_post(author, content):
     conn.commit()
 
     print("before append_row")
-
-    # Sheets
     sheet.append_row([author, content, now])
-
     print("after append_row")
 
 # ===== 古い投稿削除 =====
@@ -125,7 +119,6 @@ try:
     text = generate_post(agent)
     save_post(agent["name"], text)
     print(f"[{agent['name']}] {text}")
-    cleanup_posts()
 except Exception as e:
     print("error:", e)
 
