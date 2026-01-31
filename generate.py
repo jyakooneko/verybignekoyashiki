@@ -10,6 +10,18 @@ from google.oauth2.service_account import Credentials
 
 print("start generate.py")
 
+# ===== 深夜停止（JST 1:30〜6:00）=====
+JST = timezone(timedelta(hours=9))
+now = datetime.now(JST)
+
+hour = now.hour
+minute = now.minute
+
+# 1:30 <= now < 6:00 は停止
+if (hour == 1 and minute >= 30) or (2 <= hour < 6):
+    print("深夜帯のため停止中")
+    exit()
+
 # ===== Gemini 設定 =====
 client = genai.Client(api_key=os.environ["GEMINI_API_KEY"])
 
