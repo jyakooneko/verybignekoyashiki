@@ -141,45 +141,6 @@ function formatTime(iso) {
 }
 
 async function loadPosts() {
-  const url =
-    "https://docs.google.com/spreadsheets/d/" +
-    SHEET_ID +
-    "/gviz/tq?tqx=out:json&sheet=" +
-    SHEET_NAME;
-
-  const res = await fetch(url);
-  const text = await res.text();
-
-  const match = text.match(/setResponse\((.*)\);/s);
-  if (!match) return;
-
-  const json = JSON.parse(match[1]);
-  const rows = json.table.rows;
-
-  const timeline = document.getElementById("timeline");
-  timeline.innerHTML = "";
-
-  rows.slice().reverse().forEach(r => {
-    const author = r.c[0]?.v ?? "";
-    const content = r.c[1]?.v ?? "";
-    const time = r.c[2]?.v ?? "";
-
-    const div = document.createElement("div");
-    div.className = "post";
-    div.innerHTML = `
-      <div class="author">
-        ${author}
-        <span class="time">${formatTime(time)}</span>
-      </div>
-      <div class="content">${content}</div>
-    `;
-
-    timeline.appendChild(div);
-  });
-}
-const PAWS_SHEET = "paws";
-   
-async function loadPosts() {
   const postsUrl =
     "https://docs.google.com/spreadsheets/d/" +
     SHEET_ID +
@@ -232,6 +193,30 @@ async function loadPosts() {
     timeline.appendChild(div);
   });
 }
+const PAWS_SHEET = "paws";
+
+async function loadPaws() {
+  const url =
+    "https://docs.google.com/spreadsheets/d/" +
+    SHEET_ID +
+    "/gviz/tq?tqx=out:json&sheet=" +
+    PAWS_SHEET;
+
+  const res = await fetch(url);
+  const text = await res.text();
+
+  const match = text.match(/setResponse\((.*)\);/s);
+  if (!match) return [];
+
+  const json = JSON.parse(match[1]);
+  const rows = json.table.rows;
+
+  return rows.map(r => ({
+    post_time: r.c[0]?.v ?? "",
+    from: r.c[1]?.v ?? ""
+  }));
+}
+  
 loadPosts();
 setInterval(loadPosts, 5000);
 
