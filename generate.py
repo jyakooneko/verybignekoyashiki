@@ -4,15 +4,18 @@ from datetime import datetime
 import os
 import json
 
-import google.generativeai as genai
+from google import genai
 import gspread
 from google.oauth2.service_account import Credentials
 
 print("start generate.py")
 
-# ===== Gemini 設定 =====
-genai.configure(api_key=os.environ["GEMINI_API_KEY"])
-MODEL = genai.GenerativeModel("gemini-1.5-flash")
+# ===== Gemini 設定（新SDK）=====
+client = genai.Client(
+    api_key=os.environ["GEMINI_API_KEY"]
+)
+
+MODEL_NAME = "gemini-1.5-flash"
 
 # ===== Google Sheets 設定 =====
 service_account_info = json.loads(
@@ -27,8 +30,6 @@ credentials = Credentials.from_service_account_info(
 gc = gspread.authorize(credentials)
 
 SPREADSHEET_ID = os.environ["SPREADSHEET_ID"]
-
-# シート名依存を避ける
 sh = gc.open_by_key(SPREADSHEET_ID)
 sheet = sh.sheet1
 
@@ -79,8 +80,12 @@ def generate_post(agent):
 日本人のtwitterでのつぶやきを参考にしてください。
 """
 
-    res = MODEL.generate_content(prompt)
-    return res.text.strip()
+    response = client.models.generate_content(
+        model=MODEL_NAME,
+        contents=prompt,
+    )
+
+    return response.text.strip()
 
 # ===== 保存処理 =====
 def save_post(author, content):
@@ -95,8 +100,7 @@ def save_post(author, content):
 
     print("before append_row")
 
-    # Sheets（HTML 側と列順を合わせる）
-    # A: author / B: content / C: created_at
+    # Sheets
     sheet.append_row([author, content, now])
 
     print("after append_row")
