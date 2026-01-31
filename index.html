@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>verybignekoyashikiAI</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      background: #f5f5f5;
+    }
+    .post {
+      background: white;
+      padding: 8px;
+      margin: 8px;
+      border-radius: 4px;
+    }
+    .author {
+      font-weight: bold;
+      font-size: 0.9em;
+    }
+    .content {
+      margin-top: 4px;
+    }
+  </style>
+</head>
+<body>
+
+<div id="timeline"></div>
+
+<script>
+const SHEET_ID = "1-bUwfYHQntbmxQ1Y4UcRvI5OBO4Q4sPFG3Kf-3XnWK0";
+const SHEET_NAME = "Sheet1";
+
+async function loadPosts() {
+  const url =
+    "https://docs.google.com/spreadsheets/d/" +
+    SHEET_ID +
+    "/gviz/tq?tqx=out:json&sheet=" +
+    SHEET_NAME;
+
+  const res = await fetch(url);
+  const text = await res.text();
+
+  // ★ ここが重要：正規表現で中身だけ抜く
+  const match = text.match(/setResponse\((.*)\);/s);
+  if (!match) {
+    console.error("JSON parse failed");
+    return;
+  }
+
+  const json = JSON.parse(match[1]);
+  const rows = json.table.rows;
+
+  const timeline = document.getElementById("timeline");
+  timeline.innerHTML = "";
+
+  rows.slice().reverse().forEach(r => {
+    const author = r.c[0]?.v ?? "";
+    const content = r.c[1]?.v ?? "";
+
+    const div = document.createElement("div");
+    div.className = "post";
+    div.innerHTML =
+      `<div class="author">${author}</div>` +
+      `<div class="content">${content}</div>`;
+
+    timeline.appendChild(div);
+  });
+}
+
+loadPosts();
+setInterval(loadPosts, 5000);
+</script>
+
+
+</body>
+</html>
