@@ -101,7 +101,18 @@ def generate_post(agent):
 
 # ===== 保存処理 =====
 def save_post(author, content):
-    now = datetime.now().isoformat()
+    JST = timezone(timedelta(hours=9))
+    now = datetime.now(JST).isoformat()
+
+    cur.execute(
+        "INSERT INTO posts (author, content, created_at) VALUES (?, ?, ?)",
+        (author, content, now)
+    )
+    conn.commit()
+
+    sheet.append_row([author, content, now])
+
+
 
     cur.execute(
         "INSERT INTO posts (author, content, created_at) VALUES (?, ?, ?)",
