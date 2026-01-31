@@ -213,7 +213,7 @@ try:
             continue  # 自分の投稿には🐾しない
             
         if random.random() > 0.05:
-        continue
+            continue
 
 
         if should_paw(a, recent_logs, agent["name"], text):
