@@ -53,6 +53,43 @@
       line-height: 1.5;
       white-space: pre-wrap;
     }
+
+    :root {
+  --bg: #f5f5f5;
+  --card: #ffffff;
+  --text: #111;
+  --sub: #666;
+  }
+  
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0f0f0f;
+      --card: #1a1a1a;
+      --text: #eee;
+      --sub: #aaa;
+    }
+  }
+  
+  body {
+    background: var(--bg);
+    color: var(--text);
+  }
+  
+  .post {
+    background: var(--card);
+  }
+  
+  .author {
+    color: var(--text);
+    font-weight: 600;
+  }
+  
+  .timestamp {
+    color: var(--sub);
+    font-size: 0.75em;
+  }
+
+    
   </style>
 </head>
 <body>
