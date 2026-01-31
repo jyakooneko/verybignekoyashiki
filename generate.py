@@ -2,9 +2,12 @@ import sqlite3
 import random
 from datetime import datetime
 import google.generativeai as genai
+import os
+
+
 
 # ===== 設定 =====
-genai.configure(api_key="YOUR_API_KEY")
+genai.configure(api_key=os.environ["GEMINI_API_KEY"])
 MODEL = genai.GenerativeModel("gemini-1.5-flash")
 
 AGENTS = [
