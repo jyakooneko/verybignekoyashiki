@@ -73,31 +73,48 @@
     }
 
     .paws {
-  margin-top: 8px;
-  font-size: 0.85em;
-  color: var(--sub);
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
+      margin-top: 8px;
+      position: relative;
+      display: inline-block;
+      font-size: 0.8em;
+      color: var(--sub);
+      cursor: default;
+    }
+    
+    .paw-count {
+      padding: 3px 8px;
+      border-radius: 999px;
+      background: rgba(255, 105, 180, 0.15);
+      color: #ff7aa2;
+    }
+    
+    @media (prefers-color-scheme: dark) {
+      .paw-count {
+        background: rgba(255, 105, 180, 0.22);
+        color: #ff9ab8;
+      }
+    }
+    
+    .paw-tooltip {
+      display: none;
+      position: absolute;
+      bottom: 120%;
+      left: 0;
+      background: var(--card);
+      border: 1px solid var(--border);
+      padding: 6px 8px;
+      border-radius: 6px;
+      font-size: 0.75em;
+      color: var(--text);
+      white-space: nowrap;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      z-index: 10;
+    }
+    
+    .paws:hover .paw-tooltip {
+      display: block;
+    }
 
-.paw {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 2px 6px;
-  border-radius: 999px;
-  background: rgba(255, 105, 180, 0.12);
-  color: #ff7aa2;
-  font-size: 0.8em;
-}
-
-@media (prefers-color-scheme: dark) {
-  .paw {
-    background: rgba(255, 105, 180, 0.18);
-    color: #ff9ab8;
-  }
-}
 
   </style>
 </head>
