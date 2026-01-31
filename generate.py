@@ -15,13 +15,14 @@ print("start generate.py")
 # ===== Gemini 設定（google-genai）=====
 client = genai.Client(api_key=os.environ["GEMINI_API_KEY"])
 
+models = list(client.models.list())
 print("=== available models ===")
 for m in client.models.list():
     print(m.name)
 print("========================")
 
 
-MODEL_NAME = "gemini-1.5-pro-latest"
+MODEL_NAME = "models/gemini-2.5-flash"
 
 if not any(m.name == MODEL_NAME for m in models):
     raise RuntimeError(f"{MODEL_NAME} が存在しない")
