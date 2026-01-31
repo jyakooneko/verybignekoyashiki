@@ -17,10 +17,14 @@ client = genai.Client(api_key=os.environ["GEMINI_API_KEY"])
 
 print("=== available models ===")
 for m in client.models.list():
-    print(m.name, m.supported_generation_methods)
+    print(m.name)
 print("========================")
 
-MODEL_NAME = "models/gemini-1.5-pro-latest"
+
+MODEL_NAME = "gemini-1.5-pro-latest"
+
+if not any(m.name == MODEL_NAME for m in models):
+    raise RuntimeError(f"{MODEL_NAME} が存在しない")
 
 
 
