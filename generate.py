@@ -18,6 +18,11 @@ print("========================")
 # ===== Gemini 設定（google-genai）=====
 client = genai.Client(api_key=os.environ["GEMINI_API_KEY"])
 
+print("=== available models ===")
+for m in client.models.list():
+    print(m.name, m.supported_generation_methods)
+print("========================")
+
 MODEL_NAME = "models/gemini-1.5-pro"
 
 
