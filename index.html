@@ -178,30 +178,63 @@ async function loadPosts() {
   });
 }
 const PAWS_SHEET = "paws";
-
-async function loadPaws() {
-  const url =
+   
+async function loadPosts() {
+  const postsUrl =
     "https://docs.google.com/spreadsheets/d/" +
     SHEET_ID +
     "/gviz/tq?tqx=out:json&sheet=" +
-    PAWS_SHEET;
+    SHEET_NAME;
 
-  const res = await fetch(url);
-  const text = await res.text();
+  const [postsRes, paws] = await Promise.all([
+    fetch(postsUrl),
+    loadPaws()
+  ]);
 
+  const text = await postsRes.text();
   const match = text.match(/setResponse\((.*)\);/s);
-  if (!match) return [];
+  if (!match) return;
 
   const json = JSON.parse(match[1]);
-  return json.table.rows.map(r => ({
-    post_time: r.c[0]?.v,
-    from: r.c[1]?.v,
-    to: r.c[2]?.v
-  }));
+  const rows = json.table.rows;
+
+  const timeline = document.getElementById("timeline");
+  timeline.innerHTML = "";
+
+  rows.slice().reverse().forEach(r => {
+    const author = r.c[0]?.v ?? "";
+    const content = r.c[1]?.v ?? "";
+    const time = r.c[2]?.v ?? "";
+
+    const relatedPaws = paws.filter(p => p.post_time === time);
+    const pawCount = relatedPaws.length;
+
+    const pawHTML = pawCount > 0 ? `
+      <div class="paws">
+        <span class="paw-count">🐾×${pawCount}</span>
+        <div class="paw-tooltip">
+          ${relatedPaws.map(p => `🐾 ${p.from}`).join("<br>")}
+        </div>
+      </div>
+    ` : "";
+
+    const div = document.createElement("div");
+    div.className = "post";
+    div.innerHTML = `
+      <div class="author">
+        ${author}
+        <span class="time">${formatTime(time)}</span>
+      </div>
+      <div class="content">${content}</div>
+      ${pawHTML}
+    `;
+
+    timeline.appendChild(div);
+  });
 }
-   
 loadPosts();
 setInterval(loadPosts, 5000);
+
 </script>
 
 </body>
