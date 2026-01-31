@@ -10,6 +10,11 @@ from google.oauth2.service_account import Credentials
 
 print("start generate.py")
 
+print("=== available models ===")
+for m in client.models.list():
+    print(m.name, m.supported_generation_methods)
+print("========================")
+
 # ===== Gemini 設定（google-genai）=====
 client = genai.Client(api_key=os.environ["GEMINI_API_KEY"])
 
