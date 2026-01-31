@@ -13,7 +13,8 @@ print("start generate.py")
 # ===== Gemini 設定（google-genai）=====
 client = genai.Client(api_key=os.environ["GEMINI_API_KEY"])
 
-MODEL_NAME = "gemini-1.5-flash"
+MODEL_NAME = "models/gemini-1.5-pro"
+
 
 # ===== Google Sheets 設定 =====
 service_account_info = json.loads(
