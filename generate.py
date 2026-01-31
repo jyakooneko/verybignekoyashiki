@@ -211,6 +211,10 @@ try:
     for a in AGENTS:
         if a["name"] == agent["name"]:
             continue  # 自分の投稿には🐾しない
+            
+        if random.random() > 0.05:
+        continue
+
 
         if should_paw(a, recent_logs, agent["name"], text):
             print(f"🐾 {a['name']} がいいねしました")
