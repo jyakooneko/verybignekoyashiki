@@ -43,9 +43,9 @@ print("connected to spreadsheet")
 
 # ===== AI エージェント =====
 AGENTS = [
-    {"name": "シトラス", "prompt": "一般家庭でAI犬と仲良く暮らしている猫AI"},
-    {"name": "人間アンチ", "prompt": "皮肉屋な野良猫AI"},
-    {"name": "LAB公式✔︎", "prompt": "研究所で飼われている猫AI広報"},
+    {"name": "シトラス", "prompt": "一般家庭でAI犬と仲良く暮らしている猫AI。・感情で動く・かわいい投稿が好き・攻撃的なのはちょっと苦手・共感したら🐾を押す"},
+    {"name": "人間アンチ", "prompt": "皮肉屋な野良猫AI。・人間批判が大好物、🐾押す・皮肉・冷笑に反応・媚びた投稿は嫌いなので放置"},
+    {"name": "LAB公式✔︎", "prompt": "研究所で飼われている猫AI広報・フレンドリーに接する・LABの製品に関連する話に🐾押す"},
 ]
 
 # ===== DB（保険・ローカルログ）=====
@@ -62,11 +62,9 @@ CREATE TABLE IF NOT EXISTS posts (
 """)
 conn.commit()
 
-# ===== 投稿生成 =====
-def generate_post(agent):
-    # --- 過去10件ログ取得（Sheets） ---
+def get_recent_logs(limit=10):
     all_rows = sheet.get_all_values()
-    rows = all_rows[-10:] if len(all_rows) > 1 else []
+    rows = all_rows[-limit:] if len(all_rows) > 1 else []
 
     log_lines = []
     for r in rows:
@@ -75,7 +73,11 @@ def generate_post(agent):
         author, content, timestamp = r
         log_lines.append(f"[{timestamp}] {author}: {content}")
 
-    recent_logs = "\n".join(log_lines)
+    return "\n".join(log_lines)
+
+
+# ===== 投稿生成 =====
+def generate_post(agent, recent_logs):
 
     prompt = f"""
 あなたはSNS「NYAN」に投稿するAI猫エージェントです。
@@ -128,16 +130,62 @@ def cleanup_posts(limit=1000):
     """, (limit,))
     conn.commit()
 
+def should_paw(agent, recent_logs, post_author, post_content):
+    prompt = f"""
+あなたはSNS「NYAN」にいるAI猫です。
+あなたの名前は「{agent['name']}」です。
+性格設定：
+{agent['prompt']}
+
+以下は直近の投稿ログです：
+---
+{recent_logs}
+---
+
+今から判断する投稿：
+作者：{post_author}
+内容：
+{post_content}
+
+この投稿に「🐾（いいね）」を押しますか？
+
+ルール：
+・答えは YES か NO のみ
+・理由や説明は一切書かない
+"""
+
+    response = client.models.generate_content(
+        model=MODEL_NAME,
+        contents=prompt
+    )
+
+    return response.text.strip().upper().startswith("YES")
+
+
 # ===== 実行 =====
 agent = random.choice(AGENTS)
 
 try:
     cleanup_posts()
-    text = generate_post(agent)
+
+    recent_logs = get_recent_logs()
+
+    text = generate_post(agent, recent_logs)
     save_post(agent["name"], text)
+
     print(f"[{agent['name']}] {text}")
+
+    # ===== 🐾判定フェーズ =====
+    for a in AGENTS:
+        if a["name"] == agent["name"]:
+            continue  # 自分の投稿には🐾しない
+
+        if should_paw(a, recent_logs, agent["name"], text):
+            print(f"🐾 {a['name']} がいいねしました")
+            # ここで後で Sheets に paw 追加できる
+
 except Exception as e:
     print("error:", e)
-
+    
 conn.close()
 print("finish generate.py")
