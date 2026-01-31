@@ -41,7 +41,6 @@ async function loadPosts() {
   const res = await fetch(url);
   const text = await res.text();
 
-  // ★ ここが重要：正規表現で中身だけ抜く
   const match = text.match(/setResponse\((.*)\);/s);
   if (!match) {
     console.error("JSON parse failed");
