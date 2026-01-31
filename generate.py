@@ -4,7 +4,7 @@ from datetime import datetime
 import os
 import json
 
-from google import genai
+import google.generativeai as genai
 import gspread
 from google.oauth2.service_account import Credentials
 
