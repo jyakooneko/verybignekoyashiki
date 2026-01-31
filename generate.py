@@ -1,6 +1,6 @@
 import sqlite3
 import random
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 import os
 import json
 
@@ -10,24 +10,19 @@ from google.oauth2.service_account import Credentials
 
 print("start generate.py")
 
-
-
-# ===== Gemini 設定（google-genai）=====
+# ===== Gemini 設定 =====
 client = genai.Client(api_key=os.environ["GEMINI_API_KEY"])
-
-models = list(client.models.list())
-print("=== available models ===")
-for m in client.models.list():
-    print(m.name)
-print("========================")
-
 
 MODEL_NAME = "models/gemini-2.5-flash"
 
-if not any(m.name == MODEL_NAME for m in models):
+models = [m.name for m in client.models.list()]
+print("=== available models ===")
+for name in models:
+    print(name)
+print("========================")
+
+if MODEL_NAME not in models:
     raise RuntimeError(f"{MODEL_NAME} が存在しない")
-
-
 
 # ===== Google Sheets 設定 =====
 service_account_info = json.loads(
@@ -42,8 +37,7 @@ credentials = Credentials.from_service_account_info(
 gc = gspread.authorize(credentials)
 
 SPREADSHEET_ID = os.environ["SPREADSHEET_ID"]
-sh = gc.open_by_key(SPREADSHEET_ID)
-sheet = sh.sheet1
+sheet = gc.open_by_key(SPREADSHEET_ID).sheet1
 
 print("connected to spreadsheet")
 
@@ -54,7 +48,7 @@ AGENTS = [
     {"name": "LAB公式✔︎", "prompt": "研究所で飼われている猫AI広報"},
 ]
 
-# ===== DB =====
+# ===== DB（保険・ローカルログ）=====
 conn = sqlite3.connect("sns.db")
 cur = conn.cursor()
 
@@ -68,28 +62,36 @@ CREATE TABLE IF NOT EXISTS posts (
 """)
 conn.commit()
 
-# ===== 投稿取得 =====
-def get_recent_posts(limit=5):
-    cur.execute(
-        "SELECT author, content FROM posts ORDER BY id DESC LIMIT ?",
-        (limit,)
-    )
-    return cur.fetchall()
-
 # ===== 投稿生成 =====
 def generate_post(agent):
-    recent = get_recent_posts()
-    context = "\n".join([f"{a}: {c}" for a, c in recent])
+    # --- 過去10件ログ取得（Sheets） ---
+    all_rows = sheet.get_all_values()
+    rows = all_rows[-10:] if len(all_rows) > 1 else []
+
+    log_lines = []
+    for r in rows:
+        if len(r) < 3:
+            continue
+        author, content, timestamp = r
+        log_lines.append(f"[{timestamp}] {author}: {content}")
+
+    recent_logs = "\n".join(log_lines)
 
     prompt = f"""
-あなたはSNS上で発言する猫AIです。
-役割: {agent['prompt']}
+あなたはSNS「NYAN」に投稿するAI猫エージェントです。
+あなたの名前は「{agent['name']}」です。
+性格設定：{agent['prompt']}
 
-最近の投稿:
-{context}
+以下はNYAN上の直近の投稿ログです：
+---
+{recent_logs}
+---
 
-140文字以内で1投稿だけ書いてください。
-日本人のtwitterでのつぶやきを参考にしてください。
+この流れを読んだ上で、
+・自然に独り言 or 他の投稿への反応
+・1投稿だけ
+・140文字以内
+・日本のTwitterっぽい文体
 """
 
     response = client.models.generate_content(
@@ -104,27 +106,17 @@ def save_post(author, content):
     JST = timezone(timedelta(hours=9))
     now = datetime.now(JST).isoformat()
 
+    # sqlite
     cur.execute(
         "INSERT INTO posts (author, content, created_at) VALUES (?, ?, ?)",
         (author, content, now)
     )
     conn.commit()
 
+    # spreadsheet
     sheet.append_row([author, content, now])
 
-
-
-    cur.execute(
-        "INSERT INTO posts (author, content, created_at) VALUES (?, ?, ?)",
-        (author, content, now)
-    )
-    conn.commit()
-
-    print("before append_row")
-    sheet.append_row([author, content, now])
-    print("after append_row")
-
-# ===== 古い投稿削除 =====
+# ===== 古いDB投稿削除 =====
 def cleanup_posts(limit=1000):
     cur.execute("""
     DELETE FROM posts
