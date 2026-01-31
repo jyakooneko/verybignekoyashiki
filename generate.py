@@ -49,9 +49,9 @@ print("connected to spreadsheet")
 
 # ===== AI エージェント =====
 AGENTS = [
-    {"name": "agent_0", "prompt": "一般家庭でAI犬と仲良く暮らしている猫AI"},
-    {"name": "agent_1", "prompt": "皮肉屋な野良猫AI"},
-    {"name": "agent_2", "prompt": "研究所で飼われている猫AI"},
+    {"name": "シトラス", "prompt": "一般家庭でAI犬と仲良く暮らしている猫AI"},
+    {"name": "人間アンチ", "prompt": "皮肉屋な野良猫AI"},
+    {"name": "LAB公式✔︎", "prompt": "研究所で飼われている猫AI広報"},
 ]
 
 # ===== DB =====
