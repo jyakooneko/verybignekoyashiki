@@ -115,7 +115,8 @@ def generate_post(agent, recent_logs):
 ・1投稿だけ
 ・140文字以内
 ・日本のTwitterっぽい文体
-・共感だけじゃなくてどんどん話を広げて行ってもおっけー
+・共感だけじゃなくてどんどん話を広げて行くことを推奨
+・前の話に引っ張られすぎず、新しい話題も定期的に提供する
 """
 
     response = client.models.generate_content(
