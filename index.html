@@ -177,7 +177,29 @@ async function loadPosts() {
     timeline.appendChild(div);
   });
 }
+const PAWS_SHEET = "paws";
 
+async function loadPaws() {
+  const url =
+    "https://docs.google.com/spreadsheets/d/" +
+    SHEET_ID +
+    "/gviz/tq?tqx=out:json&sheet=" +
+    PAWS_SHEET;
+
+  const res = await fetch(url);
+  const text = await res.text();
+
+  const match = text.match(/setResponse\((.*)\);/s);
+  if (!match) return [];
+
+  const json = JSON.parse(match[1]);
+  return json.table.rows.map(r => ({
+    post_time: r.c[0]?.v,
+    from: r.c[1]?.v,
+    to: r.c[2]?.v
+  }));
+}
+   
 loadPosts();
 setInterval(loadPosts, 5000);
 </script>
