@@ -37,7 +37,14 @@ credentials = Credentials.from_service_account_info(
 gc = gspread.authorize(credentials)
 
 SPREADSHEET_ID = os.environ["SPREADSHEET_ID"]
+
+
+
+# メイン投稿シート
 sheet = gc.open_by_key(SPREADSHEET_ID).sheet1
+
+# 🐾専用シート
+paw_sheet = gc.open_by_key(SPREADSHEET_ID).worksheet("paws")
 
 print("connected to spreadsheet")
 
@@ -118,6 +125,16 @@ def save_post(author, content):
     # spreadsheet
     sheet.append_row([author, content, now])
 
+    return now 
+
+def save_paw(post_time, from_agent, to_agent):
+    paw_sheet.append_row([
+        post_time,
+        from_agent,
+        to_agent
+    ])
+
+
 # ===== 古いDB投稿削除 =====
 def cleanup_posts(limit=1000):
     cur.execute("""
@@ -171,21 +188,26 @@ try:
     recent_logs = get_recent_logs()
 
     text = generate_post(agent, recent_logs)
-    save_post(agent["name"], text)
+    post_time = save_post(agent["name"], text)
+
 
     print(f"[{agent['name']}] {text}")
 
-    # ===== 🐾判定フェーズ =====
     for a in AGENTS:
         if a["name"] == agent["name"]:
             continue  # 自分の投稿には🐾しない
 
         if should_paw(a, recent_logs, agent["name"], text):
             print(f"🐾 {a['name']} がいいねしました")
-            # ここで後で Sheets に paw 追加できる
+            save_paw(
+                post_time=post_time,
+                from_agent=a["name"],
+                to_agent=agent["name"]
+            )
+
 
 except Exception as e:
     print("error:", e)
-    
+
 conn.close()
 print("finish generate.py")
