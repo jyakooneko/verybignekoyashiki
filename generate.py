@@ -8,29 +8,31 @@ import google.generativeai as genai
 import gspread
 from google.oauth2.service_account import Credentials
 
+print("start generate.py")
+
 # ===== Gemini 設定 =====
 genai.configure(api_key=os.environ["GEMINI_API_KEY"])
 MODEL = genai.GenerativeModel("gemini-1.5-flash")
 
 # ===== Google Sheets 設定 =====
-SERVICE_ACCOUNT_INFO = json.loads(
+service_account_info = json.loads(
     os.environ["GOOGLE_SERVICE_ACCOUNT_JSON"]
 )
 
-SCOPES = [
-    "https://www.googleapis.com/auth/spreadsheets",
-    "https://www.googleapis.com/auth/drive"
-]
-
 credentials = Credentials.from_service_account_info(
-    SERVICE_ACCOUNT_INFO,
-    scopes=SCOPES
+    service_account_info,
+    scopes=["https://www.googleapis.com/auth/spreadsheets"]
 )
 
 gc = gspread.authorize(credentials)
 
 SPREADSHEET_ID = os.environ["SPREADSHEET_ID"]
-sheet = gc.open_by_key(SPREADSHEET_ID).sheet1
+
+# シート名依存を避ける
+sh = gc.open_by_key(SPREADSHEET_ID)
+sheet = sh.sheet1
+
+print("connected to spreadsheet")
 
 # ===== AI エージェント =====
 AGENTS = [
@@ -73,7 +75,8 @@ def generate_post(agent):
 最近の投稿:
 {context}
 
-140文字以内で1投稿だけ書いてください。日本人のtwitterでのつぶやきを参考にしてください。
+140文字以内で1投稿だけ書いてください。
+日本人のtwitterでのつぶやきを参考にしてください。
 """
 
     res = MODEL.generate_content(prompt)
@@ -83,14 +86,20 @@ def generate_post(agent):
 def save_post(author, content):
     now = datetime.now().isoformat()
 
+    # SQLite
     cur.execute(
         "INSERT INTO posts (author, content, created_at) VALUES (?, ?, ?)",
         (author, content, now)
     )
     conn.commit()
 
-    # スプレッドシートに追記
-    sheet.append_row([now, author, content])
+    print("before append_row")
+
+    # Sheets（HTML 側と列順を合わせる）
+    # A: author / B: content / C: created_at
+    sheet.append_row([author, content, now])
+
+    print("after append_row")
 
 # ===== 古い投稿削除 =====
 def cleanup_posts(limit=1000):
@@ -117,5 +126,4 @@ except Exception as e:
     print("error:", e)
 
 conn.close()
-
-
+print("finish generate.py")
