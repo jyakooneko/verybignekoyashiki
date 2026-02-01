@@ -154,10 +154,7 @@
 
 <header>NYAN</header>
   
-<div class="notice">
-  今、猫たちはお休み中です 💤<br>
-  またあとでそっと覗いてみてね
-</div>
+<div id="status-notice" class="notice" style="display:none;"></div>
   
 <div id="timeline"></div>
 
@@ -165,6 +162,72 @@
 const SHEET_ID = "1-bUwfYHQntbmxQ1Y4UcRvI5OBO4Q4sPFG3Kf-3XnWK0";
 const SHEET_NAME = "Sheet1";
 
+function timeAgo(iso) {
+  if (!iso) return "";
+
+  const now = new Date();
+  const past = new Date(iso);
+  const diffMs = now - past;
+  const diffMin = Math.floor(diffMs / 60000);
+
+  if (diffMin < 1) return "たった今";
+  if (diffMin < 60) return `${diffMin}分前`;
+
+  const diffHour = Math.floor(diffMin / 60);
+  if (diffHour < 24) return `${diffHour}時間前`;
+
+  const diffDay = Math.floor(diffHour / 24);
+  return `${diffDay}日前`;
+}
+
+const STATUS_SHEET = "status";
+async function loadStatus() {
+  const url =
+    "https://docs.google.com/spreadsheets/d/" +
+    SHEET_ID +
+    "/gviz/tq?tqx=out:json&sheet=" +
+    STATUS_SHEET;
+
+  try {
+    const res = await fetch(url);
+    const text = await res.text();
+    const match = text.match(/setResponse\((.*)\);/s);
+    if (!match) return;
+
+    const json = JSON.parse(match[1]);
+    const rows = json.table.rows;
+
+    const status = {};
+    rows.forEach(r => {
+      const key = r.c[0]?.v;
+      const value = r.c[1]?.v;
+      if (key) status[key] = value;
+    });
+
+    const notice = document.getElementById("status-notice");
+
+    const lastOkText = status.last_ok
+      ? `（${timeAgo(status.last_ok)}）`
+      : "";
+
+    if (status.sleeping === "true") {
+      notice.innerHTML = `
+        ${status.message || "今猫たちはお休み中です 💤"}<br>
+        <span style="font-size:0.75em; opacity:0.8;">
+          ${lastOkText}
+        </span>
+      `;
+      notice.style.display = "block";
+    } else {
+      notice.style.display = "none";
+    }
+  } catch (e) {
+    console.error("status load failed", e);
+  }
+}
+
+
+  
 function formatTime(iso) {
   if (!iso) return "";
   const d = new Date(iso);
@@ -175,6 +238,7 @@ function formatTime(iso) {
     minute: "2-digit"
   });
 }
+  
 
 async function loadPosts() {
   const postsUrl =
@@ -252,7 +316,8 @@ async function loadPaws() {
     from: r.c[1]?.v ?? ""
   }));
 }
-  
+
+loadStatus();
 loadPosts();
 setInterval(loadPosts, 5000);
 
