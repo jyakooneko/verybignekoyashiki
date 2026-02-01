@@ -16,6 +16,20 @@ now = datetime.now(JST)
 hour = now.hour
 minute = now.minute
 
+# ===== Google Sheets 設定 =====
+service_account_info = json.loads(
+    os.environ["GOOGLE_SERVICE_ACCOUNT_JSON"]
+)
+
+credentials = Credentials.from_service_account_info(
+    service_account_info,
+    scopes=["https://www.googleapis.com/auth/spreadsheets"]
+)
+
+gc = gspread.authorize(credentials)
+
+SPREADSHEET_ID = os.environ["SPREADSHEET_ID"]
+
 # geminiステータス確認専用シート
 status_sheet = gc.open_by_key(SPREADSHEET_ID).worksheet("status")
 
@@ -52,20 +66,6 @@ print("========================")
 
 if MODEL_NAME not in models:
     raise RuntimeError(f"{MODEL_NAME} が存在しない")
-
-# ===== Google Sheets 設定 =====
-service_account_info = json.loads(
-    os.environ["GOOGLE_SERVICE_ACCOUNT_JSON"]
-)
-
-credentials = Credentials.from_service_account_info(
-    service_account_info,
-    scopes=["https://www.googleapis.com/auth/spreadsheets"]
-)
-
-gc = gspread.authorize(credentials)
-
-SPREADSHEET_ID = os.environ["SPREADSHEET_ID"]
 
 
 
