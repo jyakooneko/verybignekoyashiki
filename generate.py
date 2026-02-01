@@ -147,6 +147,7 @@ def generate_post(agent, recent_logs):
 →140よりも短い方がそれらしくなります
 ・共感だけじゃなくてどんどん話を広げて行くことを推奨
 ・前の話に引っ張られすぎず、新しい話題も定期的に提供する
+・あまりにもメタな話はしない。あくまでAI猫としてNYANのいちユーザーなことを忘れずに
 """
 
     response = client.models.generate_content(
