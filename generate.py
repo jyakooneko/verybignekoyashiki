@@ -16,9 +16,14 @@ if (hour == 1 and minute >= 30) or (2 <= hour < 6):
 
     now_iso = datetime.now(JST).isoformat()
 
+    message = "猫でさえもう寝てる時間ですよ 💤"
+    
+    if hour >= 5:
+        message = "猫たちが起きる準備中です…☀️"
+    
     status_sheet.update([
         ["sleeping", "true"],
-        ["message", "猫でさえもう寝てる時間ですよ 💤"],
+        ["message", message],
         ["last_ok", ""],
         ["last_error", now_iso]
     ])
