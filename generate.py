@@ -288,7 +288,7 @@ except Exception as e:
 
     status_sheet.update([
         ["sleeping", "true" if sleeping else "false"],
-        ["message", "今猫たちはお休み中です... if sleeping else "エラーが発生しました"],
+        ["message", "今猫たちはお休み中です..." if sleeping else "エラーが発生しました"],
         ["last_error", now_iso]
     ])
 
