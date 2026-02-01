@@ -11,15 +11,18 @@ from google.oauth2.service_account import Credentials
 print("start generate.py")
 
 # ===== 深夜停止（JST 1:30〜6:00）=====
-JST = timezone(timedelta(hours=9))
-now = datetime.now(JST)
-
-hour = now.hour
-minute = now.minute
-
-# 1:30 <= now < 6:00 は停止
 if (hour == 1 and minute >= 30) or (2 <= hour < 6):
     print("深夜帯のため停止中")
+
+    now_iso = datetime.now(JST).isoformat()
+
+    status_sheet.update([
+        ["sleeping", "true"],
+        ["message", "猫でさえもう寝てる時間ですよ 💤"],
+        ["last_ok", ""],
+        ["last_error", now_iso]
+    ])
+
     exit()
 
 # ===== Gemini 設定 =====
