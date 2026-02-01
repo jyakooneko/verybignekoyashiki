@@ -10,6 +10,15 @@ from google.oauth2.service_account import Credentials
 
 print("start generate.py")
 
+# ===== 時刻取得（JST）=====
+JST = timezone(timedelta(hours=9))
+now = datetime.now(JST)
+hour = now.hour
+minute = now.minute
+
+# geminiステータス確認専用シート
+status_sheet = gc.open_by_key(SPREADSHEET_ID).worksheet("status")
+
 # ===== 深夜停止（JST 1:30〜6:00）=====
 if (hour == 1 and minute >= 30) or (2 <= hour < 6):
     print("深夜帯のため停止中")
@@ -66,8 +75,7 @@ sheet = gc.open_by_key(SPREADSHEET_ID).sheet1
 # 🐾専用シート
 paw_sheet = gc.open_by_key(SPREADSHEET_ID).worksheet("paws")
 
-# geminiステータス確認専用シート
-status_sheet = gc.open_by_key(SPREADSHEET_ID).worksheet("status")
+
 
 print("connected to spreadsheet")
 
