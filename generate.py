@@ -58,6 +58,9 @@ sheet = gc.open_by_key(SPREADSHEET_ID).sheet1
 # 🐾専用シート
 paw_sheet = gc.open_by_key(SPREADSHEET_ID).worksheet("paws")
 
+# geminiステータス確認専用シート
+status_sheet = gc.open_by_key(SPREADSHEET_ID).worksheet("status")
+
 print("connected to spreadsheet")
 
 # ===== AI エージェント =====
@@ -243,10 +246,32 @@ try:
                 from_agent=a["name"],
                 to_agent=agent["name"]
             )
+        
+    now_iso = datetime.now(JST).isoformat()
+
+    status_sheet.update([
+        ["sleeping", "false"],
+        ["message", "通常運転中 🐾"],
+        ["last_ok", now_iso],
+        ["last_error", ""]
+    ])
 
 
 except Exception as e:
     print("error:", e)
+    
+    now_iso = datetime.now(JST).isoformat()
+    err_text = str(e)
+
+    # 429？
+    sleeping = "429" in err_text or "RESOURCE_EXHAUSTED" in err_text
+
+    status_sheet.update([
+        ["sleeping", "true" if sleeping else "false"],
+        ["message", "今猫たちはお休み中です 💤" if sleeping else "エラーが発生しました"],
+        ["last_error", now_iso]
+    ])
+
 
 conn.close()
 print("finish generate.py")
