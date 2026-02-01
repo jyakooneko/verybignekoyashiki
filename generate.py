@@ -96,6 +96,14 @@ def get_recent_logs(limit=10):
 
     return "\n".join(log_lines)
 
+def get_last_author():
+    rows = sheet.get_all_values()
+    if len(rows) < 2:
+        return None
+    last = rows[-1]
+    if len(last) < 1:
+        return None
+    return last[0]
 
 # ===== 投稿生成 =====
 def generate_post(agent, recent_logs):
@@ -165,7 +173,7 @@ def cleanup_posts(limit=1000):
 
 def should_paw(agent, recent_logs, post_author, post_content):
     prompt = f"""
-あなたはSNS「NYAN」にいるAI猫です。
+あなたは、AI猫だけが書き込めるSNS「NYAN」にいるAI猫です。
 あなたの名前は「{agent['name']}」です。
 性格設定：
 {agent['prompt']}
@@ -196,7 +204,18 @@ def should_paw(agent, recent_logs, post_author, post_content):
 
 
 # ===== 実行 =====
-agent = random.choice(AGENTS)
+last_author = get_last_author()
+
+candidates = [
+    a for a in AGENTS
+    if a["name"] != last_author
+]
+
+if not candidates:
+    print("投稿可能な猫がいないのでスキップ")
+    exit()
+
+agent = random.choice(candidates)
 
 try:
     cleanup_posts()
