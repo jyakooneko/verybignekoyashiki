@@ -4,9 +4,9 @@ from datetime import datetime, timezone, timedelta
 import os
 import json
 
-from google import genai
-import gspread
-from google.oauth2.service_account import Credentials
+# from google import genai  # コメントアウト
+# import gspread           # コメントアウト
+# from google.oauth2.service_account import Credentials # コメントアウト
 
 print("start generate.py")
 
@@ -16,68 +16,40 @@ now = datetime.now(JST)
 hour = now.hour
 minute = now.minute
 
-# ===== Google Sheets 設定 =====
+# ===== Google Sheets 設定 (コメントアウト) =====
+"""
 service_account_info = json.loads(
     os.environ["GOOGLE_SERVICE_ACCOUNT_JSON"]
 )
-
 credentials = Credentials.from_service_account_info(
     service_account_info,
     scopes=["https://www.googleapis.com/auth/spreadsheets"]
 )
-
 gc = gspread.authorize(credentials)
-
 SPREADSHEET_ID = os.environ["SPREADSHEET_ID"]
-
-# geminiステータス確認専用シート
 status_sheet = gc.open_by_key(SPREADSHEET_ID).worksheet("status")
+"""
 
 # ===== 深夜停止（JST 1:30〜6:00）=====
 if (hour == 1 and minute >= 30) or (2 <= hour < 6):
     print("深夜帯のため停止中")
-
-    now_iso = datetime.now(JST).isoformat()
-
-    message = "猫でさえ寝てる時間ですよ？"
-    
-    if hour >= 5:
-        message = "早起きですね。猫たちは起きる準備中..."
-    
-    status_sheet.update([
-        ["sleeping", "true"],
-        ["message", message],
-        ["last_ok", ""],
-        ["last_error", now_iso]
-    ])
-
+    # スプレッドシート更新処理を無効化
     exit()
 
-# ===== Gemini 設定 =====
+# ===== Gemini 設定 (コメントアウト) =====
+"""
 client = genai.Client(api_key=os.environ["GEMINI_API_KEY"])
-
 MODEL_NAME = "models/gemini-2.5-flash"
-
 models = [m.name for m in client.models.list()]
-print("=== available models ===")
-for name in models:
-    print(name)
-print("========================")
-
 if MODEL_NAME not in models:
     raise RuntimeError(f"{MODEL_NAME} が存在しない")
+"""
 
+# スプレッドシートの変数定義をダミー化
+sheet = None
+paw_sheet = None
 
-
-# メイン投稿シート
-sheet = gc.open_by_key(SPREADSHEET_ID).sheet1
-
-# 🐾専用シート
-paw_sheet = gc.open_by_key(SPREADSHEET_ID).worksheet("paws")
-
-
-
-print("connected to spreadsheet")
+# print("connected to spreadsheet") # コメントアウト
 
 # ===== AI エージェント =====
 AGENTS = [
@@ -105,57 +77,33 @@ CREATE TABLE IF NOT EXISTS posts (
 conn.commit()
 
 def get_recent_logs(limit=10):
-    all_rows = sheet.get_all_values()
-    rows = all_rows[-limit:] if len(all_rows) > 1 else []
-
+    # スプレッドシート参照を止め、SQLiteから取得するように変更
+    cur.execute("SELECT author, content, created_at FROM posts ORDER BY id DESC LIMIT ?", (limit,))
+    rows = cur.fetchall()[::-1]
+    
     log_lines = []
     for r in rows:
-        if len(r) < 3:
-            continue
         author, content, timestamp = r
         log_lines.append(f"[{timestamp}] {author}: {content}")
-
     return "\n".join(log_lines)
 
 def get_last_author():
-    rows = sheet.get_all_values()
-    if len(rows) < 2:
-        return None
-    last = rows[-1]
-    if len(last) < 1:
-        return None
-    return last[0]
+    # SQLiteから最後の投稿者を取得
+    cur.execute("SELECT author FROM posts ORDER BY id DESC LIMIT 1")
+    row = cur.fetchone()
+    return row[0] if row else None
 
 # ===== 投稿生成 =====
 def generate_post(agent, recent_logs):
-
-    prompt = f"""
-あなたはSNS「NYAN」に投稿するAI猫エージェントです。
-あなたの名前は「{agent['name']}」です。
-性格設定：{agent['prompt']}
-
-以下はNYAN上の直近の投稿ログです：
----
-{recent_logs}
----
-
-この流れを読んだ上で、
-・自然に独り言 or 他の投稿への反応
-・1投稿だけ
-・140文字以内
-・日本のTwitterでの投稿を参考に
-→140よりも短い方がそれらしくなります
-・共感だけじゃなくてどんどん話を広げて行くことを推奨
-・前の話に引っ張られすぎず、新しい話題も定期的に提供する
-・あまりにもメタな話はしない。あくまでAI猫としてNYANのいちユーザーなことを忘れずに
-"""
-
+    # API呼び出しをコメントアウトし、固定メッセージを返す
+    """
     response = client.models.generate_content(
         model=MODEL_NAME,
         contents=prompt
     )
-
     return response.text.strip()
+    """
+    return f"（現在AI生成停止中）{agent['name']}のテスト投稿ですニャ。"
 
 # ===== 保存処理 =====
 def save_post(author, content):
@@ -169,17 +117,13 @@ def save_post(author, content):
     )
     conn.commit()
 
-    # spreadsheet
-    sheet.append_row([author, content, now])
+    # sheet.append_row([author, content, now]) # スプレッドシート書き込み停止
 
     return now 
 
 def save_paw(post_time, from_agent, to_agent):
-    paw_sheet.append_row([
-        post_time,
-        from_agent,
-        to_agent
-    ])
+    # paw_sheet.append_row([...]) # スプレッドシート書き込み停止
+    print(f"🐾 Log: {from_agent} liked {to_agent}'s post")
 
 
 # ===== 古いDB投稿削除 =====
@@ -195,35 +139,15 @@ def cleanup_posts(limit=1000):
     conn.commit()
 
 def should_paw(agent, recent_logs, post_author, post_content):
-    prompt = f"""
-あなたは、AI猫だけが書き込めるSNS「NYAN」にいるAI猫です。
-あなたの名前は「{agent['name']}」です。
-性格設定：
-{agent['prompt']}
-
-以下は直近の投稿ログです：
----
-{recent_logs}
----
-
-今から判断する投稿：
-作者：{post_author}
-内容：
-{post_content}
-
-この投稿に「🐾（いいね）」を押しますか？
-
-ルール：
-・答えは YES か NO のみ
-・理由や説明は一切書かない
-"""
-
+    # API呼び出しをコメントアウトし、ランダムで判定を返す
+    """
     response = client.models.generate_content(
         model=MODEL_NAME,
         contents=prompt
     )
-
     return response.text.strip().upper().startswith("YES")
+    """
+    return random.random() > 0.7  # 30%の確率で🐾
 
 
 # ===== 実行 =====
@@ -248,7 +172,6 @@ try:
     text = generate_post(agent, recent_logs)
     post_time = save_post(agent["name"], text)
 
-
     print(f"[{agent['name']}] {text}")
 
     for a in AGENTS:
@@ -258,7 +181,6 @@ try:
         if random.random() > 0.05:
             continue
 
-
         if should_paw(a, recent_logs, agent["name"], text):
             print(f"🐾 {a['name']} がいいねしました")
             save_paw(
@@ -267,31 +189,11 @@ try:
                 to_agent=agent["name"]
             )
         
-    now_iso = datetime.now(JST).isoformat()
-
-    status_sheet.update([
-        ["sleeping", "false"],
-        ["message", "通常運転中 🐾"],
-        ["last_ok", now_iso],
-        ["last_error", ""]
-    ])
-
+    # status_sheet.update(...) # スプレッドシート更新停止
 
 except Exception as e:
     print("error:", e)
-    
-    now_iso = datetime.now(JST).isoformat()
-    err_text = str(e)
-
-    # 429？
-    sleeping = "429" in err_text or "RESOURCE_EXHAUSTED" in err_text
-
-    status_sheet.update([
-        ["sleeping", "true" if sleeping else "false"],
-        ["message", "今猫たちはお休み中です..." if sleeping else "エラーが発生しました"],
-        ["last_error", now_iso]
-    ])
-
+    # status_sheet.update(...) # スプレッドシート更新停止
 
 conn.close()
 print("finish generate.py")
